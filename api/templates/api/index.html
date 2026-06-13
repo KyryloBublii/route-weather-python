@@ -1,0 +1,166 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Route</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            font-family: sans-serif;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .form {
+            position: absolute;
+            top: 6%;
+            left: 0.5%;
+            width: 300px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 1);
+            margin-top: 1%;
+            border: 1px solid black;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .form p {
+            margin: 7px 0;
+        }
+
+        .form input {
+            width: 80%;
+            height: 25px;
+            margin-bottom: 10px;
+        }
+
+        .form button {
+            font-weight: bold;
+            padding: 10px;
+            width: 80%;
+        }
+
+        .form-details-container {
+            position: absolute;
+            bottom: 3%;
+            left: 0.5%;
+            width: 300px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 1);
+            border: 1px solid black;
+            z-index: 1000;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="form">
+    <div>
+        <a href="/">Clean</a>
+    </div>
+    <form id="route-form">
+        <p>First City:</p>
+        <label for="start"></label><input type="text" id="start" name="city1">
+        <p>Second City:</p>
+        <label for="end"></label><input type="text" id="end" name="city2">
+        <br>
+        <button type="button" id="submit">Submit</button>
+    </form>
+</div>
+<div id="map"></div>
+<div class="form-details-container" id="details">
+    <div id="output-distance"></div>
+    <br>
+    <div id="output-weather-details"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([55.2057984, 23.5803167], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let routeLayer = null;
+    let markers = [];
+
+    document.getElementById('submit').addEventListener('click', function () {
+        const start = document.getElementById('start').value;
+        const end = document.getElementById('end').value;
+        if (!start || !end) return;
+        getRouteAndWeather(start, end);
+    });
+
+    function getRouteAndWeather(start, end) {
+        fetch(`/api/route/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    document.getElementById('details').style.display = 'none';
+                    return;
+                }
+
+                // Clear previous route/markers
+                if (routeLayer) map.removeLayer(routeLayer);
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+
+                // Draw route
+                routeLayer = L.geoJSON(data.route.geometry, {
+                    style: { color: 'blue', weight: 4 }
+                }).addTo(map);
+
+                // Add markers
+                const startMarker = L.marker([data.start.lat, data.start.lon]).addTo(map);
+                const endMarker = L.marker([data.end.lat, data.end.lon]).addTo(map);
+                markers.push(startMarker, endMarker);
+
+                // Fit map to route bounds
+                map.fitBounds(routeLayer.getBounds());
+
+                // Distance (OSRM returns meters)
+                const distanceKm = (data.route.distance / 1000).toFixed(1);
+                document.getElementById('output-distance').innerHTML =
+                    `<p>Distance: ${distanceKm} km</p>`;
+
+                // Weather
+                const w1 = data.weather.start;
+                const w2 = data.weather.end;
+                document.getElementById('output-weather-details').innerHTML = `
+                    <h5>Weather Information</h5>
+                    <p>City: ${w1.city}</p>
+                    <p>Temperature: ${w1.temperature} °C</p>
+                    <p>Weather: ${w1.description}</p>
+                    <br>
+                    <p>City: ${w2.city}</p>
+                    <p>Temperature: ${w2.temperature} °C</p>
+                    <p>Weather: ${w2.description}</p>
+                `;
+
+                document.getElementById('details').style.display = 'block';
+            })
+            .catch(error => console.error('Error fetching route/weather data:', error));
+    }
+</script>
+</body>
+</html>
