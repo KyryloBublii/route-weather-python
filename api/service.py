@@ -1,9 +1,17 @@
 import requests
 from django.conf import settings
+from django.core.cache import cache
+
 
 class WeatherService:
     @staticmethod
     def get_weather(city: str) -> dict:
+        cache_key = f"weather_{city.lower()}"
+        cached = cache.get(cache_key)
+
+        if cached:
+            return cached
+
         response = requests.get(
             settings.WEATHER_API_URL,
             params={
@@ -17,11 +25,14 @@ class WeatherService:
 
         data = response.json()
 
-        return {
+        result = {
             'city': data["name"],
             'temperature': data["main"]["temp"],
             'description': data["weather"][0]['main']
         }
+
+        cache.set(cache_key, result, timeout=60*10)  # 10 minutes
+        return result
 
 class RoutingService:
     OSRM_URL = "http://router.project-osrm.org/route/v1/driving"
@@ -42,6 +53,12 @@ class GeoCodingService:
     NOMINATIM_URL="https://nominatim.openstreetmap.org/search"
     @staticmethod
     def get_geocoding(city: str) -> dict:
+        cache_key = f"geocode_{city.lower()}"
+        cached = cache.get(cache_key)
+
+        if cached:
+            return cached
+
         response = requests.get(
             GeoCodingService.NOMINATIM_URL,
             params={
@@ -60,7 +77,11 @@ class GeoCodingService:
         if not data:
             raise Exception('No results found')
 
-        return {
+        result = {
             'longitude': float(data[0]["lon"]),
             'latitude': float(data[0]["lat"]),
         }
+
+        cache.set(cache_key, result, timeout=60*60)  # 1 hour
+
+        return result

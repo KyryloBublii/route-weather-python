@@ -42,7 +42,9 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
-    'api'
+    'api',
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
 ]
 
 MIDDLEWARE = [

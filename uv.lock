@@ -185,6 +185,11 @@ dependencies = [
     { name = "requests" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "django-stubs" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=6.0.6" },
@@ -193,6 +198,9 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "requests", specifier = ">=2.34.2" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "django-stubs", specifier = ">=6.0.5" }]
 
 [[package]]
 name = "sqlparse"
