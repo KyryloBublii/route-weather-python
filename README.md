@@ -1,7 +1,7 @@
 ---
 title: Route Weather Python
 year: 2026
-tags: [python, django, django-rest-framework, openweathermap, osrm, nominatim, openstreetmap, rest-api, docker]
+tags: [python, django, django-rest-framework, openweathermap, docker]
 status: complete
 cover: photos/main.jpg
 ---
